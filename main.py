@@ -59,7 +59,7 @@ def predict_bilstm(df):
     model.eval()
 
     SEQ_LENGTH = 30
-    input_seq = df.iloc[-SEQ_LENGTH:, 1:].to_numpy()  # Không lấy cột ngày khi đưa vào model
+    input_seq = df.iloc[-SEQ_LENGTH:].to_numpy()  # Không lấy cột ngày khi đưa vào model
 
     input_tensor = torch.tensor(input_seq, dtype=torch.float32).unsqueeze(0).to(device)
 
