@@ -45,7 +45,7 @@ def predict_xgboost(latest_input, features):
 
 # Function for BiLSTM prediction
 def predict_bilstm(df):
-    input_size = 5
+    input_size = 4
     hidden_size = 256
     num_layers = 3
     output_size = 1
