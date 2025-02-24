@@ -264,7 +264,6 @@ with col1:
         start_date = st.date_input("Start Date", min_value=pred_df["date"].min(), max_value=pred_df["date"].max())
         end_date = st.date_input("End Date", min_value=pred_df["date"].min(), max_value=pred_df["date"].max())
         
-        
         filtered_data = pred_df[(pred_df["date"] >= start_date) & (pred_df["date"] <= end_date)]
     
         # Select number of days to display
@@ -302,8 +301,13 @@ with col1:
                     predictions = predict_MLP(X_input_tensor)
                 else:
                     predictions = predict_XGBoost(X_input_flat, len(FEATURES))
-
-                future_dates = pd.date_range(start=filtered_data['date'].iloc[-1], periods=ahead+1)[1:]
+                
+                last_date = pd.to_datetime(filtered_data["date"].iloc[-1])
+                future_dates = pd.date_range(start=last_date, periods=ahead+1)[1:]
+                
+                # Extend predictions with last actual data point for continuity
+                extended_dates = pd.to_datetime(np.concatenate([[last_date], future_dates[:display_days]]))
+                extended_predictions = np.concatenate([[filtered_data[target_feature].iloc[-1]], predictions[:display_days]])
                 
                 with col2:
                     prediction_table = pd.DataFrame({"Date": future_dates[:display_days], target_feature: predictions[:display_days]})
@@ -312,8 +316,8 @@ with col1:
                     
                     # Plot feature trend
                     fig, ax = plt.subplots(figsize=(16, 8))
-                    ax.plot(filtered_data['date'].tail(sequence_length), filtered_data[target_feature].tail(sequence_length), label="Actual")
-                    ax.plot(future_dates[:display_days], predictions[:display_days], label="Predicted", linestyle="dashed", marker='o')
+                    ax.plot(pd.to_datetime(filtered_data['date'].tail(sequence_length)), filtered_data[target_feature].tail(sequence_length), label="Actual")
+                    ax.plot(extended_dates, extended_predictions, label="Predicted", linestyle="dashed", marker='o')
                     ax.set_title(f"{target_feature} Trend")
                     ax.set_xlabel("Date")
                     ax.set_ylabel(target_feature)
