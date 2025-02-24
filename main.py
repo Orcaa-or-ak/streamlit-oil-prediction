@@ -264,63 +264,66 @@ with col1:
         start_date = st.date_input("Start Date", min_value=pred_df["date"].min(), max_value=pred_df["date"].max())
         end_date = st.date_input("End Date", min_value=pred_df["date"].min(), max_value=pred_df["date"].max())
         
-        filtered_data = pred_df[(pred_df["date"] >= start_date) & (pred_df["date"] <= end_date)]
-    
-        # Select number of days to display
-        display_days = st.slider("Select number of days to display", 1, 7, 7)
+        if (end_date - start_date).days < 60:
+            st.error("The selected date range must be at least 60 days. Please choose again.")
+        else:
+            filtered_data = pred_df[(pred_df["date"] >= start_date) & (pred_df["date"] <= end_date)]
         
-        # Data preprocessing
-        sequence_length = 60
-        ahead = 7
-        
-        latest_60 = filtered_data.tail(sequence_length)[FEATURES].values
-        latest_60_norm = scaler.transform(latest_60)
-        X_input = np.expand_dims(latest_60_norm, axis=0)
-        X_input_tensor = torch.tensor(X_input, dtype=torch.float32)
-        X_input_flat = X_input.reshape(1, -1)
-        
-        # Placeholder for results in col2
-        with col2:
-            st.header("Prediction Results")
-            table_placeholder = st.empty()
-            chart_placeholder = st.empty()
-            data_table_placeholder = st.empty()
-        
-        # Prediction button
-        if st.button("Predict"):
-            # Placeholder for model prediction logic
-            if model_choice == "RNN":
-                predictions = predict_RNN(X_input_tensor)
-            elif model_choice == "LSTM":
-                predictions = predict_LSTM(X_input_tensor)
-            elif model_choice == "BiLSTM":
-                predictions = predict_BiLSTM(X_input_tensor)
-            elif model_choice == "MLP":
-                predictions = predict_MLP(X_input_tensor)
-            else:
-                predictions = predict_XGBoost(X_input_flat, len(FEATURES))
+            # Select number of days to display
+            display_days = st.slider("Select number of days to display", 1, 7, 7)
             
-            last_date = pd.to_datetime(filtered_data["date"].iloc[-1])
-            future_dates = pd.date_range(start=last_date, periods=ahead+1)[1:]
+            # Data preprocessing
+            sequence_length = 60
+            ahead = 7
             
-            # Extend predictions with last actual data point for continuity
-            extended_dates = pd.to_datetime(np.concatenate([[last_date], future_dates[:display_days]]))
-            extended_predictions = np.concatenate([[filtered_data[target_feature].iloc[-1]], predictions[:display_days]])
+            latest_60 = filtered_data.tail(sequence_length)[FEATURES].values
+            latest_60_norm = scaler.transform(latest_60)
+            X_input = np.expand_dims(latest_60_norm, axis=0)
+            X_input_tensor = torch.tensor(X_input, dtype=torch.float32)
+            X_input_flat = X_input.reshape(1, -1)
             
+            # Placeholder for results in col2
             with col2:
-                prediction_table = pd.DataFrame({"Date": future_dates[:display_days], target_feature: predictions[:display_days]})
-                prediction_table["Date"] = prediction_table["Date"].dt.strftime("%Y-%m-%d")
-                table_placeholder.dataframe(prediction_table.set_index("Date"))
+                st.header("Prediction Results")
+                table_placeholder = st.empty()
+                chart_placeholder = st.empty()
+                data_table_placeholder = st.empty()
+            
+            # Prediction button
+            if st.button("Predict"):
+                # Placeholder for model prediction logic
+                if model_choice == "RNN":
+                    predictions = predict_RNN(X_input_tensor)
+                elif model_choice == "LSTM":
+                    predictions = predict_LSTM(X_input_tensor)
+                elif model_choice == "BiLSTM":
+                    predictions = predict_BiLSTM(X_input_tensor)
+                elif model_choice == "MLP":
+                    predictions = predict_MLP(X_input_tensor)
+                else:
+                    predictions = predict_XGBoost(X_input_flat, len(FEATURES))
                 
-                # Plot feature trend
-                fig, ax = plt.subplots(figsize=(16, 8))
-                ax.plot(pd.to_datetime(filtered_data['date'].tail(sequence_length)), filtered_data[target_feature].tail(sequence_length), label="Actual")
-                ax.plot(extended_dates, extended_predictions, label="Predicted", linestyle="dashed", marker='o')
-                ax.set_title(f"{target_feature} Trend")
-                ax.set_xlabel("Date")
-                ax.set_ylabel(target_feature)
-                ax.legend()
-                chart_placeholder.pyplot(fig)
+                last_date = pd.to_datetime(filtered_data["date"].iloc[-1])
+                future_dates = pd.date_range(start=last_date, periods=ahead+1)[1:]
                 
-                # Show data used for prediction
-                data_table_placeholder.dataframe(filtered_data.set_index("date"))
+                # Extend predictions with last actual data point for continuity
+                extended_dates = pd.to_datetime(np.concatenate([[last_date], future_dates[:display_days]]))
+                extended_predictions = np.concatenate([[filtered_data[target_feature].iloc[-1]], predictions[:display_days]])
+                
+                with col2:
+                    prediction_table = pd.DataFrame({"Date": future_dates[:display_days], target_feature: predictions[:display_days]})
+                    prediction_table["Date"] = prediction_table["Date"].dt.strftime("%Y-%m-%d")
+                    table_placeholder.dataframe(prediction_table.set_index("Date"))
+                    
+                    # Plot feature trend
+                    fig, ax = plt.subplots(figsize=(16, 8))
+                    ax.plot(pd.to_datetime(filtered_data['date'].tail(sequence_length)), filtered_data[target_feature].tail(sequence_length), label="Actual")
+                    ax.plot(extended_dates, extended_predictions, label="Predicted", linestyle="dashed", marker='o')
+                    ax.set_title(f"{target_feature} Trend")
+                    ax.set_xlabel("Date")
+                    ax.set_ylabel(target_feature)
+                    ax.legend()
+                    chart_placeholder.pyplot(fig)
+                    
+                    # Show data used for prediction
+                    data_table_placeholder.dataframe(filtered_data.set_index("date"))
