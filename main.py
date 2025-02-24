@@ -196,7 +196,7 @@ def predict_BiLSTM(X_input_tensor):
     # ----- 8. Output the Results -----
     return y_pred_target
 
-def predict_MLP(X_input_tensor, target_feature):
+def predict_MLP(X_input_tensor):
     model_file_path = "models/best-MLP.pth"
 
     # ----- 5. Define the MLP Model and Load the Saved Model -----
